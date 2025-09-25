@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Guide to Arrays</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Scholarly Neutrals -->
+    <!-- Application Structure Plan: The SPA is designed as an interactive, single-page educational guide. It's structured into thematic sections (Introduction, Operations, Multidimensional Arrays) accessible via a sticky navigation bar for a clear learning path. The core of the app is the "Operations" section, which features a central, dynamic visualization of an array. Users select an operation (like Insert, Search, Sort), which triggers an animation on the visualization. This is paired with a synchronized panel showing the relevant C code, a step-by-step explanation, and time complexity. This task-oriented, interactive approach was chosen over a static, linear document to make abstract data structure concepts tangible and easier to grasp. A language toggle (English/Bengali) ensures accessibility. -->
+    <!-- Visualization & Content Choices:
+    - Array Representation -> Goal: Inform/Organize -> Viz: Interactive HTML/CSS blocks -> Interaction: Hover to see index/value, highlight during operations. Justification: Provides a concrete, visual model of an array's structure. Method: HTML divs + JS.
+    - Array Operations -> Goal: Change/Compare -> Viz: Animated HTML blocks & synchronized code/text panels -> Interaction: User selects operation via buttons, watches animation, reads corresponding info. Justification: Directly connects theory (code, complexity) with a practical demonstration, enhancing understanding. Method: JS DOM manipulation.
+    - Time Complexity -> Goal: Compare -> Viz: Bar Chart -> Interaction: Static chart to visually compare O(1), O(n), O(n²). Justification: A simple bar chart is the most effective way to show the relative cost of different complexities for beginners. Library: Chart.js/Canvas.
+    - Multidimensional Array -> Goal: Organize/Inform -> Viz: HTML/CSS Grid -> Interaction: Hover over cells to see indices/value. Justification: A grid is the most intuitive representation of a 2D matrix. Method: HTML divs + JS.
+    - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', 'Hind Siliguri', sans-serif;
+            background-color: #FDFBF8;
+            color: #4A4A4A;
+        }
+        .lang-bn {
+            display: none;
+        }
+        .lang-toggle .lang-bn,
+        .lang-toggle.bn .lang-en {
+            display: none;
+        }
+        .lang-toggle.bn .lang-bn {
+            display: inline-block;
+        }
+        .bn-font { font-family: 'Hind Siliguri', sans-serif; }
+        .array-element, .matrix-cell {
+            transition: all 0.5s ease-in-out;
+        }
+        .highlight-primary { background-color: #3B82F6; color: white; }
+        .highlight-secondary { background-color: #FBBF24; }
+        .highlight-traverse { background-color: #A78BFA; color: white; }
+        .code-block {
+            background-color: #1E293B;
+            color: #E2E8F0;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-family: monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        .operation-btn.active {
+            background-color: #3B82F6;
+            color: white;
+            border-color: #3B82F6;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16 flex-wrap">
+                <h1 class="text-xl font-bold text-gray-800 flex-shrink-0">
+                    <span class="lang-en">Interactive Guide to Arrays</span>
+                    <span class="lang-bn bn-font">অ্যারে পরিচিতি</span>
+                </h1>
+                <div class="flex items-center space-x-4 flex-grow justify-end md:justify-start mt-4 md:mt-0">
+                    <nav class="hidden md:flex space-x-6">
+                        <a href="#introduction" class="text-gray-600 hover:text-blue-600">
+                            <span class="lang-en">Introduction</span>
+                            <span class="lang-bn bn-font">পরিচিতি</span>
+                        </a>
+                        <a href="#operations" class="text-gray-600 hover:text-blue-600">
+                            <span class="lang-en">Operations</span>
+                            <span class="lang-bn bn-font">অপারেশন</span>
+                        </a>
+                        <a href="#multidimensional" class="text-gray-600 hover:text-blue-600">
+                            <span class="lang-en">Multidimensional</span>
+                            <span class="lang-bn bn-font">বহুমাত্রিক</span>
+                        </a>
+                    </nav>
+                    <div class="relative flex items-center md:ml-auto">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                            </svg>
+                        </div>
+                        <input type="search" id="search-input" placeholder="Search..." aria-label="Search" class="block w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    <button id="language-toggle-btn" class="px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-100 flex-shrink-0">
+                        <span class="lang-en">বাংলা</span>
+                        <span class="lang-bn">English</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main id="app-container" class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+        <section id="introduction" class="mb-20 scroll-mt-20">
+            <h2 class="text-3xl font-bold mb-2">
+                <span class="lang-en">What is an Array?</span>
+                <span class="lang-bn bn-font">অ্যারে কী?</span>
+            </h2>
+            <p class="text-lg text-gray-600 max-w-3xl mb-8">
+                <span class="lang-en">An array is a fundamental data structure used to store a collection of elements of the same type in a contiguous block of memory. Each element is accessible via an index, starting from 0. Below is a visual representation of a simple integer array.</span>
+                <span class="lang-bn bn-font">অ্যারে হলো একটি মৌলিক ডেটা স্ট্রাকচার যা একই ধরনের একাধিক উপাদানকে মেমোরির একটি সংলগ্ন ব্লকে সংরক্ষণ করতে ব্যবহৃত হয়। প্রতিটি উপাদানকে একটি সূচক (index) দ্বারা অ্যাক্সেস করা যায়, যা ০ থেকে শুরু হয়। নিচে একটি সাধারণ ইন্টিজার অ্যারের ভিজ্যুয়াল উপস্থাপনা দেওয়া হলো।</span>
+            </p>
+
+            <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                <div id="intro-array-vis" class="flex flex-wrap justify-center items-end gap-1 mb-4 min-h-[80px]"></div>
+                <div class="text-center text-sm text-gray-500">
+                    <span class="lang-en">Hover over an element to see its value and index.</span>
+                    <span class="lang-bn bn-font">একটি উপাদানের উপর হোভার করে তার মান এবং সূচক দেখুন।</span>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-2xl font-semibold mb-4">
+                        <span class="lang-en">Key Characteristics</span>
+                        <span class="lang-bn bn-font">প্রধান বৈশিষ্ট্য</span>
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="bg-white p-4 rounded-lg border">
+                            <h4 class="font-bold text-blue-600"><span class="lang-en">Fixed Size</span><span class="lang-bn bn-font">নির্দিষ্ট আকার</span></h4>
+                            <p class="text-sm"><span class="lang-en">The size of an array is determined at declaration and cannot be changed.</span><span class="lang-bn bn-font">অ্যারের আকার ঘোষণার সময় নির্ধারিত হয় এবং পরিবর্তন করা যায় না।</span></p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg border">
+                            <h4 class="font-bold text-blue-600"><span class="lang-en">Homogeneous Elements</span><span class="lang-bn bn-font">একই ধরনের উপাদান</span></h4>
+                            <p class="text-sm"><span class="lang-en">All elements in an array must be of the same data type.</span><span class="lang-bn bn-font">অ্যারেতে থাকা সব উপাদানকে অবশ্যই একই ডেটা টাইপের হতে হবে।</span></p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg border">
+                            <h4 class="font-bold text-blue-600"><span class="lang-en">Zero-Based Indexing</span><span class="lang-bn bn-font">শূন্য-ভিত্তিক সূচক</span></h4>
+                            <p class="text-sm"><span class="lang-en">The first element is at index 0, the second at index 1, and so on.</span><span class="lang-bn bn-font">প্রথম উপাদানের সূচক হলো ০, দ্বিতীয়টির ১, এবং এভাবেই চলতে থাকে।</span></p>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-2xl font-semibold mb-4">
+                        <span class="lang-en">Example in C</span>
+                        <span class="lang-bn bn-font">সি ভাষায় উদাহরণ</span>
+                    </h3>
+                    <div class="code-block">#include &lt;stdio.h&gt;
+
+int main() {
+  int numbers[5] = {10, 20, 30, 40, 50};
+  
+  // Access the first element (index 0)
+  printf("First element: %d\n", numbers[0]);
+  
+  return 0;
+}
+// Output: 10</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="operations" class="mb-20 scroll-mt-20">
+            <h2 class="text-3xl font-bold mb-2">
+                <span class="lang-en">Interactive Array Operations</span>
+                <span class="lang-bn bn-font">ইন্টারেক্টিভ অ্যারে অপারেশন</span>
+            </h2>
+            <p class="text-lg text-gray-600 max-w-3xl mb-8">
+                <span class="lang-en">Explore common array operations. Select an operation to see a visual demonstration, the corresponding C code, and its time complexity. Interact with the controls to see how the array changes.</span>
+                <span class="lang-bn bn-font">সাধারণ অ্যারে অপারেশনগুলো অন্বেষণ করুন। একটি ভিজ্যুয়াল প্রদর্শনী, সংশ্লিষ্ট সি কোড এবং এর টাইম কমপ্লেক্সিটি দেখতে একটি অপারেশন নির্বাচন করুন। অ্যারে কীভাবে পরিবর্তিত হয় তা দেখতে কন্ট্রোলগুলোর সাথে ইন্টারঅ্যাক্ট করুন।</span>
+            </p>
+
+            <div class="bg-white p-6 rounded-lg shadow-xl sticky top-20 z-40 mb-8">
+                 <div class="flex flex-col items-center">
+                    <div id="operations-array-vis" class="flex flex-wrap justify-center items-end gap-1 min-h-[100px] w-full"></div>
+                    <button id="reset-array-btn" class="mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-sm">
+                        <span class="lang-en">Reset Array</span><span class="lang-bn bn-font">অ্যারে রিসেট করুন</span>
+                    </button>
+                 </div>
+            </div>
+            
+            <div class="flex flex-wrap gap-2 justify-center mb-8" id="operation-buttons"></div>
+
+            <div class="grid lg:grid-cols-5 gap-8">
+                <div class="lg:col-span-3 bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold mb-3" id="op-title"></h3>
+                    <p class="text-gray-600 mb-4" id="op-desc"></p>
+                    <div id="op-controls" class="flex items-center gap-4 mb-4 p-4 bg-gray-50 rounded-lg"></div>
+                    <div class="code-block" id="op-code"></div>
+                </div>
+                <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+                     <h3 class="text-xl font-semibold mb-3">
+                        <span class="lang-en">Time Complexity</span><span class="lang-bn bn-font">টাইম কমপ্লেক্সিটি</span>
+                    </h3>
+                    <p class="text-gray-600 mb-4">
+                        <span class="lang-en">Time complexity measures how the runtime of an operation grows with the input size (n).</span>
+                        <span class="lang-bn bn-font">টাইম কমপ্লেক্সিটি পরিমাপ করে যে একটি অপারেশনের রানটাইম ইনপুটের আকারের (n) সাথে কীভাবে বৃদ্ধি পায়।</span>
+                    </p>
+                    <div class="chart-container relative h-64 w-full max-w-md mx-auto">
+                        <canvas id="complexity-chart"></canvas>
+                    </div>
+                    <div class="text-center mt-2 font-bold text-lg" id="op-complexity"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="multidimensional" class="scroll-mt-20">
+            <h2 class="text-3xl font-bold mb-2">
+                <span class="lang-en">Multidimensional Arrays</span>
+                <span class="lang-bn bn-font">বহুমাত্রিক অ্যারে</span>
+            </h2>
+            <p class="text-lg text-gray-600 max-w-3xl mb-8">
+                <span class="lang-en">A multidimensional array is an array of arrays. The most common is a 2D array, which can be thought of as a grid or a matrix. Hover over the cells to see their indices.</span>
+                <span class="lang-bn bn-font">একটি বহুমাত্রিক অ্যারে হলো অ্যারে এর একটি অ্যারে। সবচেয়ে সাধারণ হলো 2D অ্যারে, যা একটি গ্রিড বা ম্যাট্রিক্স হিসাবে ভাবা যেতে পারে। সেলগুলোর উপর হোভার করে তাদের সূচক দেখুন।</span>
+            </p>
+            <div class="grid lg:grid-cols-2 gap-8 items-center">
+                 <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold mb-4 text-center">
+                        <span class="lang-en">Visualizing a 3x3 Matrix</span>
+                        <span class="lang-bn bn-font">একটি ৩x৩ ম্যাট্রিক্সের ভিজ্যুয়ালাইজেশন</span>
+                    </h3>
+                    <div id="matrix-vis" class="grid grid-cols-3 gap-2 max-w-xs mx-auto"></div>
+                 </div>
+                 <div>
+                    <h3 class="text-2xl font-semibold mb-4">
+                        <span class="lang-en">Example in C</span>
+                        <span class="lang-bn bn-font">সি ভাষায় উদাহরণ</span>
+                    </h3>
+                    <div class="code-block">#include &lt;stdio.h&gt;
+
+int main() {
+  int matrix[3][3] = {
+    {1, 2, 3},
+    {4, 5, 6},
+    {7, 8, 9}
+  };
+  
+  // Access element at row 1, col 2
+  printf("Element at [1][2]: %d\n", matrix[1][2]);
+  
+  return 0;
+}
+// Output: 6</div>
+                 </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-gray-100 py-6 mt-12">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-600 text-sm">
+            <p>&copy; 2024 Interactive Arrays. All rights reserved.</p>
+        </div>
+    </footer>
+
+<script>
+const appData = {
+    en: {
+        operations: {
+            traverse: { name: "Traversal", desc: "Visiting each element of the array one by one.", complexity: "O(n)" },
+            access: { name: "Access", desc: "Retrieving an element at a specific index. This is very fast.", complexity: "O(1)" },
+            search: { name: "Search", desc: "Finding if a specific element exists. Linear search checks each element sequentially.", complexity: "O(n)" },
+            insert: { name: "Insertion", desc: "Adding an element at a specific position. This may require shifting other elements.", complexity: "O(n)" },
+            delete: { name: "Deletion", desc: "Removing an element from a specific position, which may require shifting elements.", complexity: "O(n)" },
+            update: { name: "Update", desc: "Modifying the value of an element at a specific index.", complexity: "O(1)" },
+            sort: { name: "Sort", desc: "Arranging elements in a specific order. Bubble Sort repeatedly steps through the list, compares adjacent elements and swaps them if they are in the wrong order.", complexity: "O(n²)" }
+        }
+    },
+    bn: {
+        operations: {
+            traverse: { name: "ট্রাভার্সাল", desc: "অ্যারের প্রতিটি উপাদানকে এক এক করে পরিদর্শন করা।", complexity: "O(n)" },
+            access: { name: "অ্যাক্সেস", desc: "একটি নির্দিষ্ট সূচক থেকে একটি উপাদান পুনরুদ্ধার করা। এটি খুব দ্রুত।", complexity: "O(1)" },
+            search: { name: "অনুসন্ধান", desc: "একটি নির্দিষ্ট উপাদান বিদ্যমান আছে কিনা তা খুঁজে বের করা। লিনিয়ার সার্চ প্রতিটি উপাদান ক্রমানুসারে পরীক্ষা করে।", complexity: "O(n)" },
+            insert: { name: "সন্নিবেশ", desc: "একটি নির্দিষ্ট অবস্থানে একটি উপাদান যোগ করা। এর জন্য অন্যান্য উপাদানগুলো সরানোর প্রয়োজন হতে পারে।", complexity: "O(n)" },
+            delete: { name: "মুছে ফেলা", desc: "একটি নির্দিষ্ট অবস্থান থেকে একটি উপাদান মুছে ফেলা, যার জন্য উপাদানগুলো সরানোর প্রয়োজন হতে পারে।", complexity: "O(n)" },
+            update: { name: "আপডেট", desc: "একটি নির্দিষ্ট সূচকের উপাদানের মান পরিবর্তন করা।", complexity: "O(1)" },
+            sort: { name: "সর্ট", desc: "উপাদানগুলোকে একটি নির্দিষ্ট ক্রমে সাজানো। বাবল সর্ট বারবার তালিকার মধ্য দিয়ে যায়, সংলগ্ন উপাদানগুলোর তুলনা করে এবং যদি তারা ভুল ক্রমে থাকে তবে তাদের অদলবদল করে।", complexity: "O(n²)" }
+        }
+    }
+};
+
+const codeTemplates = {
+    traverse: `#include <stdio.h>
+void traverse(int arr[], int size) {
+  printf("Elements: ");
+  for (int i = 0; i < size; i++) {
+    printf("%d ", arr[i]);
+  }
+}`,
+    access: `#include <stdio.h>
+int access(int arr[], int index) {
+  // Check for valid index (not shown)
+  return arr[index];
+}`,
+    search: `#include <stdio.h>
+int linear_search(int arr[], int size, int target) {
+  for (int i = 0; i < size; i++) {
+    if (arr[i] == target) {
+      return i; // Found
+    }
+  }
+  return -1; // Not found
+}`,
+    insert: `#include <stdio.h>
+void insert(int arr[], int* size, int pos, int value) {
+  // Assuming array has space
+  for (int i = *size; i > pos; i--) {
+    arr[i] = arr[i - 1];
+  }
+  arr[pos] = value;
+  (*size)++;
+}`,
+    delete: `#include <stdio.h>
+void delete_element(int arr[], int* size, int pos) {
+  for (int i = pos; i < *size - 1; i++) {
+    arr[i] = arr[i + 1];
+  }
+  (*size)--;
+}`,
+    update: `#include <stdio.h>
+void update(int arr[], int pos, int value) {
+  arr[pos] = value;
+}`,
+    sort: `#include <stdio.h>
+void bubble_sort(int arr[], int size) {
+  for (int i = 0; i < size - 1; i++) {
+    for (int j = 0; j < size - i - 1; j++) {
+      if (arr[j] > arr[j + 1]) {
+        // Swap elements
+        int temp = arr[j];
+        arr[j] = arr[j + 1];
+        arr[j + 1] = temp;
+      }
+    }
+  }
+}`
+};
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    let state = {
+        currentLanguage: 'en',
+        operationsArray: [10, 20, 30, 40, 50],
+        introArray: [10, 20, 30, 40, 50],
+        matrix: [[1, 2, 3], [4, 5, 6], [7, 8, 9]],
+        currentOperation: 'traverse',
+        isAnimating: false,
+    };
+
+    const appContainer = document.getElementById('app-container');
+    const langToggleBtn = document.getElementById('language-toggle-btn');
+    const introVis = document.getElementById('intro-array-vis');
+    const opVis = document.getElementById('operations-array-vis');
+    const matrixVis = document.getElementById('matrix-vis');
+    const opButtonsContainer = document.getElementById('operation-buttons');
+    const resetBtn = document.getElementById('reset-array-btn');
+    const searchInput = document.getElementById('search-input');
+    const sections = ['introduction', 'operations', 'multidimensional'].map(id => document.getElementById(id));
+
+    const opTitle = document.getElementById('op-title');
+    const opDesc = document.getElementById('op-desc');
+    const opCode = document.getElementById('op-code');
+    const opControls = document.getElementById('op-controls');
+    const opComplexity = document.getElementById('op-complexity');
+
+    let complexityChart;
+
+    const renderArray = (container, arrayData, isInteractive = false) => {
+        container.innerHTML = '';
+        arrayData.forEach((value, index) => {
+            const elementWrapper = document.createElement('div');
+            elementWrapper.className = 'flex flex-col items-center';
+
+            const element = document.createElement('div');
+            element.className = 'array-element w-14 h-14 md:w-16 md:h-16 flex items-center justify-center bg-gray-200 text-gray-800 font-bold text-lg rounded-md border-2 border-gray-400 shadow';
+            element.textContent = value;
+            element.dataset.index = index;
+            element.dataset.value = value;
+            
+            if (isInteractive) {
+                element.style.cursor = 'pointer';
+            }
+
+            const indexLabel = document.createElement('div');
+            indexLabel.className = 'text-xs text-gray-500 mt-1';
+            indexLabel.textContent = `[${index}]`;
+
+            elementWrapper.appendChild(element);
+            elementWrapper.appendChild(indexLabel);
+            container.appendChild(elementWrapper);
+        });
+    };
+
+    const renderMatrix = (container, matrixData) => {
+        container.innerHTML = '';
+        matrixData.forEach((row, rIndex) => {
+            row.forEach((value, cIndex) => {
+                const cell = document.createElement('div');
+                cell.className = 'matrix-cell w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center bg-gray-200 font-bold text-lg rounded-md border-2 border-gray-400';
+                cell.textContent = value;
+                cell.title = `Index: [${rIndex}][${cIndex}]`;
+                container.appendChild(cell);
+            });
+        });
+    };
+    
+    const updateLanguage = () => {
+        appContainer.classList.toggle('bn', state.currentLanguage === 'bn');
+        renderOperationButtons();
+        updateOperationDetails();
+    };
+
+    const renderOperationButtons = () => {
+        opButtonsContainer.innerHTML = '';
+        const ops = appData[state.currentLanguage].operations;
+        Object.keys(ops).forEach(key => {
+            const btn = document.createElement('button');
+            btn.className = `operation-btn px-4 py-2 border rounded-md font-medium text-sm transition-colors duration-200 ${state.currentOperation === key ? 'active' : 'bg-white hover:bg-gray-100'}`;
+            btn.textContent = ops[key].name;
+            btn.dataset.op = key;
+            opButtonsContainer.appendChild(btn);
+        });
+    };
+    
+    const updateOperationDetails = () => {
+        const opData = appData[state.currentLanguage].operations[state.currentOperation];
+        opTitle.textContent = opData.name;
+        opDesc.textContent = opData.desc;
+        opCode.textContent = codeTemplates[state.currentOperation];
+        opComplexity.textContent = opData.complexity;
+        updateControls();
+        highlightChartBar();
+    };
+
+    const updateControls = () => {
+        opControls.innerHTML = '';
+        const lang = state.currentLanguage;
+        const createInput = (id, type, placeholder) => {
+            const input = document.createElement('input');
+            input.id = id;
+            input.type = type;
+            input.placeholder = placeholder;
+            input.className = 'w-24 px-2 py-1 border rounded-md';
+            return input;
+        };
+        const createButton = (id, text) => {
+            const button = document.createElement('button');
+            button.id = id;
+            button.textContent = text;
+            button.className = 'px-4 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600';
+            return button;
+        };
+
+        switch (state.currentOperation) {
+            case 'access':
+            case 'delete':
+                opControls.appendChild(createInput('index-input', 'number', lang === 'en' ? 'Index' : 'সূচক'));
+                opControls.appendChild(createButton('run-btn', lang === 'en' ? 'Run' : 'চালান'));
+                break;
+            case 'search':
+                opControls.appendChild(createInput('value-input', 'number', lang === 'en' ? 'Value' : 'মান'));
+                opControls.appendChild(createButton('run-btn', lang === 'en' ? 'Run' : 'চালান'));
+                break;
+            case 'insert':
+                opControls.appendChild(createInput('index-input', 'number', lang === 'en' ? 'Index' : 'সূচক'));
+                opControls.appendChild(createInput('value-input', 'number', lang === 'en' ? 'Value' : 'মান'));
+                opControls.appendChild(createButton('run-btn', lang === 'en' ? 'Run' : 'চালান'));
+                break;
+            case 'update':
+                 opControls.appendChild(createInput('index-input', 'number', lang === 'en' ? 'Index' : 'সূচক'));
+                 opControls.appendChild(createInput('value-input', 'number', lang === 'en' ? 'Value' : 'মান'));
+                 opControls.appendChild(createButton('run-btn', lang === 'en' ? 'Run' : 'চালান'));
+                break;
+            case 'traverse':
+            case 'sort':
+                 opControls.appendChild(createButton('run-btn', lang === 'en' ? 'Run' : 'চালান'));
+                 break;
+        }
+    };
+    
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    const handleAnimation = async () => {
+        if (state.isAnimating) return;
+        state.isAnimating = true;
+        resetHighlights();
+
+        const getElements = () => Array.from(opVis.querySelectorAll('.array-element'));
+        
+        switch (state.currentOperation) {
+            case 'traverse':
+                for (const el of getElements()) {
+                    el.classList.add('highlight-traverse');
+                    await sleep(500);
+                    el.classList.remove('highlight-traverse');
+                }
+                break;
+
+            case 'access': {
+                const index = parseInt(document.getElementById('index-input').value);
+                if (isNaN(index) || index < 0 || index >= state.operationsArray.length) {
+                    // Replaced alert with a custom message box for better UX
+                    showMessageBox(state.currentLanguage === 'en' ? 'Invalid index!' : 'অবৈধ সূচক!');
+                    break;
+                }
+                const el = getElements()[index];
+                el.classList.add('highlight-primary');
+                await sleep(1500);
+                el.classList.remove('highlight-primary');
+                break;
+            }
+
+            case 'search': {
+                const value = parseInt(document.getElementById('value-input').value);
+                if (isNaN(value)) {
+                    // Replaced alert with a custom message box
+                    showMessageBox(state.currentLanguage === 'en' ? 'Please enter a number to search.' : 'অনুসন্ধানের জন্য একটি সংখ্যা লিখুন।');
+                    break;
+                }
+                let found = false;
+                for (const el of getElements()) {
+                    el.classList.add('highlight-traverse');
+                    await sleep(500);
+                    if (parseInt(el.dataset.value) === value) {
+                        el.classList.replace('highlight-traverse', 'highlight-primary');
+                        found = true;
+                        break;
+                    }
+                    el.classList.remove('highlight-traverse');
+                }
+                if (!found) showMessageBox(state.currentLanguage === 'en' ? 'Element not found.' : 'উপাদান পাওয়া যায়নি।');
+                await sleep(2000);
+                break;
+            }
+            
+            case 'insert': {
+                const index = parseInt(document.getElementById('index-input').value);
+                const value = parseInt(document.getElementById('value-input').value);
+                if (isNaN(index) || isNaN(value) || index < 0 || index > state.operationsArray.length) {
+                    showMessageBox(state.currentLanguage === 'en' ? 'Invalid index or value.' : 'অবৈধ সূচক বা মান।');
+                    break;
+                }
+                state.operationsArray.splice(index, 0, value);
+                renderArray(opVis, state.operationsArray);
+                const newEl = getElements()[index];
+                newEl.style.transform = 'scale(0)';
+                await sleep(50);
+                newEl.style.transform = 'scale(1)';
+                newEl.classList.add('highlight-primary');
+                await sleep(1500);
+                break;
+            }
+            
+            case 'delete': {
+                const index = parseInt(document.getElementById('index-input').value);
+                if (isNaN(index) || index < 0 || index >= state.operationsArray.length) {
+                    showMessageBox(state.currentLanguage === 'en' ? 'Invalid index!' : 'অবৈধ সূচক!');
+                    break;
+                }
+                const el = getElements()[index];
+                el.classList.add('highlight-primary');
+                el.style.transform = 'scale(0)';
+                await sleep(500);
+                state.operationsArray.splice(index, 1);
+                renderArray(opVis, state.operationsArray);
+                break;
+            }
+
+            case 'update': {
+                const index = parseInt(document.getElementById('index-input').value);
+                const value = parseInt(document.getElementById('value-input').value);
+                if (isNaN(index) || isNaN(value) || index < 0 || index >= state.operationsArray.length) {
+                    showMessageBox(state.currentLanguage === 'en' ? 'Invalid index or value.' : 'অবৈধ সূচক বা মান।');
+                    break;
+                }
+                const el = getElements()[index];
+                el.classList.add('highlight-primary');
+                el.style.transform = 'scale(1.2)';
+                await sleep(500);
+                state.operationsArray[index] = value;
+                el.textContent = value;
+                el.dataset.value = value;
+                el.style.transform = 'scale(1)';
+                await sleep(1000);
+                break;
+            }
+            
+            case 'sort': {
+                let arr = state.operationsArray;
+                let n = arr.length;
+                let elements = getElements();
+                for (let i = 0; i < n - 1; i++) {
+                    for (let j = 0; j < n - i - 1; j++) {
+                        elements[j].classList.add('highlight-traverse');
+                        elements[j + 1].classList.add('highlight-traverse');
+                        await sleep(500);
+                        if (arr[j] > arr[j + 1]) {
+                            [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+                            renderArray(opVis, arr);
+                            elements = getElements();
+                            elements[j].classList.add('highlight-secondary');
+                            elements[j+1].classList.add('highlight-secondary');
+                            await sleep(500);
+                        }
+                        elements[j].classList.remove('highlight-traverse', 'highlight-secondary');
+                        elements[j + 1].classList.remove('highlight-traverse', 'highlight-secondary');
+                    }
+                    elements[n-i-1].classList.add('highlight-primary');
+                }
+                elements[0].classList.add('highlight-primary');
+                break;
+            }
+        }
+        
+        resetHighlights(2000);
+        state.isAnimating = false;
+    };
+    
+    const resetHighlights = (delay = 0) => {
+        setTimeout(() => {
+            opVis.querySelectorAll('.array-element').forEach(el => {
+                el.classList.remove('highlight-primary', 'highlight-secondary', 'highlight-traverse');
+            });
+        }, delay);
+    };
+
+    const createComplexityChart = () => {
+        const ctx = document.getElementById('complexity-chart').getContext('2d');
+        const labels = ['O(1)', 'O(n)', 'O(n²)'];
+        const data = {
+            labels: labels,
+            datasets: [{
+                label: 'Operation Cost',
+                data: [1, 10, 100], 
+                backgroundColor: [
+                    'rgba(75, 192, 192, 0.6)',
+                    'rgba(255, 159, 64, 0.6)',
+                    'rgba(255, 99, 132, 0.6)'
+                ],
+                borderColor: [
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(255, 159, 64, 1)',
+                    'rgba(255, 99, 132, 1)'
+                ],
+                borderWidth: 1
+            }]
+        };
+        complexityChart = new Chart(ctx, {
+            type: 'bar',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, display: false },
+                    x: { grid: { display: false } }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false }
+                }
+            }
+        });
+    };
+    
+    const highlightChartBar = () => {
+        if (!complexityChart) {
+            return;
+        }
+        const complexity = appData[state.currentLanguage].operations[state.currentOperation].complexity;
+        const bgColors = complexityChart.data.datasets[0].backgroundColor;
+        const defaultColors = [ 'rgba(75, 192, 192, 0.2)', 'rgba(255, 159, 64, 0.2)', 'rgba(255, 99, 132, 0.2)'];
+        
+        switch(complexity) {
+            case 'O(1)':
+                bgColors[0] = 'rgba(75, 192, 192, 0.8)';
+                bgColors[1] = defaultColors[1];
+                bgColors[2] = defaultColors[2];
+                break;
+            case 'O(n)':
+                bgColors[0] = defaultColors[0];
+                bgColors[1] = 'rgba(255, 159, 64, 0.8)';
+                bgColors[2] = defaultColors[2];
+                break;
+            case 'O(n²)':
+                bgColors[0] = defaultColors[0];
+                bgColors[1] = defaultColors[1];
+                bgColors[2] = 'rgba(255, 99, 132, 0.8)';
+                break;
+        }
+        complexityChart.update();
+    };
+
+    const showMessageBox = (message) => {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-[100]';
+        modal.innerHTML = `
+            <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm mx-auto">
+                <p class="text-gray-800 text-lg mb-4">${message}</p>
+                <div class="flex justify-end">
+                    <button id="close-message-box" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">OK</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        document.getElementById('close-message-box').addEventListener('click', () => {
+            document.body.removeChild(modal);
+        });
+    };
+
+    const debounce = (func, delay) => {
+        let timeoutId;
+        return (...args) => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => func(...args), delay);
+        };
+    };
+
+    const handleSearch = (event) => {
+        const query = event.target.value.toLowerCase();
+        sections.forEach(section => {
+            const textContent = section.textContent.toLowerCase();
+            if (textContent.includes(query) || query === '') {
+                section.style.display = 'block';
+            } else {
+                section.style.display = 'none';
+            }
+        });
+    };
+
+    langToggleBtn.addEventListener('click', () => {
+        state.currentLanguage = state.currentLanguage === 'en' ? 'bn' : 'en';
+        updateLanguage();
+    });
+
+    opButtonsContainer.addEventListener('click', (e) => {
+        const btn = e.target.closest('.operation-btn');
+        if (btn && !state.isAnimating) {
+            state.currentOperation = btn.dataset.op;
+            renderOperationButtons();
+            updateOperationDetails();
+            resetHighlights();
+        }
+    });
+
+    resetBtn.addEventListener('click', () => {
+        if (state.isAnimating) return;
+        state.operationsArray = [10, 20, 30, 40, 50];
+        renderArray(opVis, state.operationsArray);
+    });
+    
+    opControls.addEventListener('click', e => {
+        if (e.target.id === 'run-btn') {
+            handleAnimation();
+        }
+    });
+
+    searchInput.addEventListener('keyup', debounce(handleSearch, 300));
+
+    function init() {
+        renderArray(introVis, state.introArray);
+        renderArray(opVis, state.operationsArray);
+        renderMatrix(matrixVis, state.matrix);
+        renderOperationButtons();
+        // Fix: Call createComplexityChart before updateOperationDetails
+        createComplexityChart();
+        updateOperationDetails();
+    }
+
+    init();
+});
+</script>
+</body>
+</html>
